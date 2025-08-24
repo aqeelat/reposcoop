@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { fade, fly } from 'svelte/transition';
-  import { fetchReleasesByPage, retryWithBackoff } from '$lib/services/github-api';
+  import { githubApi } from '$lib/services/github-api';
   import type { Release, ApiResponse } from '$lib/services/repo-api';
   import {
     groupReleasesByPackage,
@@ -49,10 +49,10 @@
   async function fetchPage(pageNumber: number): Promise<boolean> {
     try {
       let resp: ApiResponse;
-      if (typeof retryWithBackoff !== 'function') {
-        resp = await fetchReleasesByPage(owner, repo, pageNumber);
+      if (typeof githubApi.retryWithBackoff !== 'function') {
+        resp = await githubApi.fetchReleasesPage(owner, repo, pageNumber);
       } else {
-        resp = await retryWithBackoff(() => fetchReleasesByPage(owner, repo, pageNumber), maxRetries);
+        resp = await githubApi.retryWithBackoff(() => githubApi.fetchReleasesPage(owner, repo, pageNumber), maxRetries);
       }
       // Update lastPage from response if not set yet
       lastPage = resp.meta.lastPage ?? lastPage;

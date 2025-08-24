@@ -17,12 +17,6 @@ export type GitHubRelease = Release;
  */
 export class GitHubApiProvider implements RepoApiProvider {
   /**
-   * Public wrapper to fetch a specific page of releases (for pagination use in UI)
-   */
-  public async fetchReleasesByPage(owner: string, repo: string, page = 1, perPage = 100) {
-    return this.fetchReleasesPage(owner, repo, page, perPage);
-  }
-  /**
    * Extracts rate limit information from response headers
    *
    * @param headers - Response headers
@@ -59,7 +53,7 @@ export class GitHubApiProvider implements RepoApiProvider {
    * @returns Promise with releases and metadata
    * @throws Error if the API request fails
    */
-  private async fetchReleasesPage(owner: string, repo: string, page = 1, perPage = 100): Promise<ApiResponse> {
+  public async fetchReleasesPage(owner: string, repo: string, page = 1, perPage = 100): Promise<ApiResponse> {
     const url = `https://api.github.com/repos/${owner}/${repo}/releases?page=${page}&per_page=${perPage}`;
 
     try {
@@ -103,150 +97,6 @@ export class GitHubApiProvider implements RepoApiProvider {
   }
 
   /**
-   * Loads example data for development purposes
-   *
-   * @param owner - Repository owner
-   * @param repo - Repository name
-   * @returns Promise with example data or null if not available
-   */
-  private async loadExampleData(owner: string, repo: string): Promise<ApiResponse | null> {
-    // Only attempt to load example data for specific repositories
-    if (owner === 'clerk' && repo === 'javascript') {
-      try {
-        // Import all example data files
-        const page1Url = '/examples/github/clerk/javascript/page1.jsonc?url';
-        const page2Url = '/examples/github/clerk/javascript/page2.jsonc?url';
-        const page3Url = '/examples/github/clerk/javascript/page3.jsonc?url';
-
-        // Fetch the JSON data from the URLs
-        const [page1Response, page2Response, page3Response] = await Promise.all([
-          fetch(page1Url),
-          fetch(page2Url),
-          fetch(page3Url),
-        ]);
-
-        const page1 = { default: await page1Response.json() };
-        const page2 = { default: await page2Response.json() };
-        const page3 = { default: await page3Response.json() };
-
-        // Combine all releases
-        const allReleases = [...page1.default, ...page2.default, ...page3.default];
-
-        return {
-          releases: allReleases,
-          meta: {
-            rateLimit: {
-              limit: 60,
-              remaining: 60,
-              reset: 0,
-            },
-            lastPage: 3,
-            totalCount: allReleases.length,
-          },
-        };
-      } catch (error) {
-        console.error('Failed to load example data:', error);
-        return null;
-      }
-    }
-
-    // Support react example in development
-    if (owner === 'facebook' && repo === 'react') {
-      try {
-        const page1Url = '/examples/github/facebook/react/page1.json?url';
-        const response = await fetch(page1Url);
-        const page1 = await response.json();
-        const allReleases = [...page1];
-        return {
-          releases: allReleases,
-          meta: {
-            rateLimit: { limit: 60, remaining: 60, reset: 0 },
-            lastPage: 1,
-            totalCount: allReleases.length,
-          },
-        };
-      } catch (error) {
-        console.error('Failed to load example data for facebook/react:', error);
-        return null;
-      }
-    }
-
-    return null;
-  }
-
-  /**
-   * Fetches all releases for a repository from the GitHub API
-   *
-   * @param owner - Repository owner
-   * @param repo - Repository name
-   * @returns Promise with all releases and metadata
-   */
-  public async fetchAllReleases(owner: string, repo: string): Promise<ApiResponse> {
-    try {
-      // In development mode, try to load example data first
-      if (import.meta.env.DEV) {
-        try {
-          const exampleData = await this.loadExampleData(owner, repo);
-          if (exampleData) {
-            console.info(`Using example data for ${owner}/${repo} in development mode`);
-            return exampleData;
-          }
-        } catch (exampleError) {
-          console.error('Failed to load example data:', exampleError);
-        }
-      }
-
-      // Fetch first page to get pagination info
-      const firstPageResponse = await this.fetchReleasesPage(owner, repo);
-      const { lastPage } = firstPageResponse.meta;
-
-      let allReleases = [...firstPageResponse.releases];
-
-      // Fetch remaining pages if there are any
-      if (lastPage > 1) {
-        const pagePromises = [];
-
-        for (let page = 2; page <= lastPage; page++) {
-          pagePromises.push(this.fetchReleasesPage(owner, repo, page));
-        }
-
-        const pageResponses = await Promise.all(pagePromises);
-
-        for (const response of pageResponses) {
-          allReleases = [...allReleases, ...response.releases];
-        }
-      }
-
-      const result: ApiResponse = {
-        releases: allReleases,
-        meta: {
-          ...firstPageResponse.meta,
-          totalCount: allReleases.length,
-        },
-      };
-
-      return result;
-    } catch (error) {
-      // Try to load example data again if available (for development) and we haven't tried already
-      if (import.meta.env.DEV) {
-        try {
-          // This is a dynamic import that will be bundled only in development mode
-          const exampleData = await this.loadExampleData(owner, repo);
-          if (exampleData) {
-            console.warn(`Using example data for ${owner}/${repo} due to API error:`, error);
-            return exampleData;
-          }
-        } catch (exampleError) {
-          console.error('Failed to load example data:', exampleError);
-        }
-      }
-
-      // Re-throw the original error
-      throw error;
-    }
-  }
-
-  /**
    * Retries a failed API request with exponential backoff
    *
    * @param fn - Function to retry
@@ -285,11 +135,3 @@ export class GitHubApiProvider implements RepoApiProvider {
 
 // Create and export a singleton instance of the GitHub API provider
 export const githubApi = new GitHubApiProvider();
-
-// Export the methods directly for backward compatibility
-// Use a safer approach to ensure githubApi is defined before destructuring
-export const fetchAllReleases = (owner: string, repo: string) => githubApi.fetchAllReleases(owner, repo);
-export const fetchReleasesByPage = (owner: string, repo: string, page = 1, perPage = 100) =>
-  githubApi.fetchReleasesByPage(owner, repo, page, perPage);
-export const retryWithBackoff = <T>(fn: () => Promise<T>, retries = 3, delay = 1000) =>
-  githubApi.retryWithBackoff(fn, retries, delay);

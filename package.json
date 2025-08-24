@@ -33,6 +33,7 @@
     "@tailwindcss/vite": "^4.1.12",
     "@types/bun": "latest",
     "@vitest/browser": "^3.2.4",
+    "@vitest/coverage-v8": "^3.2.4",
     "eslint": "^9.33.0",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-svelte": "^3.11.0",

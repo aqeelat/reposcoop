@@ -79,13 +79,15 @@ export interface ApiResponse {
  */
 export interface RepoApiProvider {
   /**
-   * Fetches all releases for a repository
+   * Fetches a single page of releases from the repository API
    *
    * @param owner - Repository owner
    * @param repo - Repository name
-   * @returns Promise with all releases and metadata
+   * @param page - Page number
+   * @param perPage - Number of items per page
+   * @returns Promise with releases and metadata
    */
-  fetchAllReleases(owner: string, repo: string): Promise<ApiResponse>;
+  fetchReleasesPage(owner: string, repo: string, page?: number, perPage?: number): Promise<ApiResponse>;
 
   /**
    * Retries a failed API request with exponential backoff

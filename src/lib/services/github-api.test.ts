@@ -1,63 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { fetchAllReleases, githubApi, retryWithBackoff } from './github-api';
+import { githubApi } from './github-api';
 
-// Mock data for testing
-const mockReleasePage1 = [
-  {
-    url: 'https://api.github.com/repos/test/repo/releases/1',
-    html_url: 'https://github.com/test/repo/releases/tag/v1.0.0',
-    id: 1,
-    tag_name: 'v1.0.0',
-    name: 'Version 1.0.0',
-    draft: false,
-    prerelease: false,
-    created_at: '2025-01-01T00:00:00Z',
-    published_at: '2025-01-01T00:00:00Z',
-    body: 'Release notes for version 1.0.0',
-    author: {
-      login: 'testuser',
-      avatar_url: 'https://github.com/testuser.png',
-      html_url: 'https://github.com/testuser',
-    },
-  },
-  {
-    url: 'https://api.github.com/repos/test/repo/releases/2',
-    html_url: 'https://github.com/test/repo/releases/tag/v1.1.0',
-    id: 2,
-    tag_name: 'v1.1.0',
-    name: 'Version 1.1.0',
-    draft: false,
-    prerelease: false,
-    created_at: '2025-01-02T00:00:00Z',
-    published_at: '2025-01-02T00:00:00Z',
-    body: 'Release notes for version 1.1.0',
-    author: {
-      login: 'testuser',
-      avatar_url: 'https://github.com/testuser.png',
-      html_url: 'https://github.com/testuser',
-    },
-  },
-];
-
-const mockReleasePage2 = [
-  {
-    url: 'https://api.github.com/repos/test/repo/releases/3',
-    html_url: 'https://github.com/test/repo/releases/tag/v1.2.0',
-    id: 3,
-    tag_name: 'v1.2.0',
-    name: 'Version 1.2.0',
-    draft: false,
-    prerelease: false,
-    created_at: '2025-01-03T00:00:00Z',
-    published_at: '2025-01-03T00:00:00Z',
-    body: 'Release notes for version 1.2.0',
-    author: {
-      login: 'testuser',
-      avatar_url: 'https://github.com/testuser.png',
-      html_url: 'https://github.com/testuser',
-    },
-  },
-];
+// Mock data for testing (removed unused variables)
 
 // Mock headers for testing
 const mockHeaders = {
@@ -80,12 +24,10 @@ const mockHeaders = {
 // Mock fetch implementation
 const mockFetch = vi.fn();
 
-// Setup global fetch mock
-vi.stubGlobal('fetch', mockFetch as unknown as typeof fetch);
-
 describe('GitHub API Service', () => {
   beforeEach(() => {
     vi.resetAllMocks();
+    global.fetch = mockFetch as unknown as typeof fetch;
   });
 
   afterEach(() => {
@@ -95,111 +37,66 @@ describe('GitHub API Service', () => {
   describe('GitHubApiProvider', () => {
     it('should implement the RepoApiProvider interface', () => {
       // Verify that the githubApi instance has all the required methods
-      expect(githubApi).toHaveProperty('fetchAllReleases');
+      expect(githubApi).toHaveProperty('fetchReleasesPage');
       expect(githubApi).toHaveProperty('retryWithBackoff');
 
       // Verify that the methods are functions
-      expect(typeof githubApi.fetchAllReleases).toBe('function');
+      expect(typeof githubApi.fetchReleasesPage).toBe('function');
       expect(typeof githubApi.retryWithBackoff).toBe('function');
-    });
-
-    it('should ensure exported functions call the githubApi methods', async () => {
-      // Mock the githubApi methods to verify they're called
-      const originalFetchAllReleases = githubApi.fetchAllReleases;
-      const originalRetryWithBackoff = githubApi.retryWithBackoff;
-
-      let fetchAllReleasesCalled = false;
-      let retryWithBackoffCalled = false;
-
-      // Mock the methods
-      githubApi.fetchAllReleases = vi.fn().mockImplementation(() => {
-        fetchAllReleasesCalled = true;
-        return Promise.resolve({
-          releases: [],
-          meta: { rateLimit: { limit: 0, remaining: 0, reset: 0 }, lastPage: 1 },
-        });
-      });
-
-      githubApi.retryWithBackoff = vi.fn().mockImplementation(() => {
-        retryWithBackoffCalled = true;
-        return Promise.resolve();
-      });
-
-      // Call the exported functions
-      await fetchAllReleases('test', 'repo');
-      await retryWithBackoff(() => Promise.resolve());
-
-      // Verify the methods were called
-      expect(fetchAllReleasesCalled).toBe(true);
-      expect(retryWithBackoffCalled).toBe(true);
-
-      // Restore the original methods
-      githubApi.fetchAllReleases = originalFetchAllReleases;
-      githubApi.retryWithBackoff = originalRetryWithBackoff;
     });
   });
 
-  describe('fetchAllReleases', () => {
+  describe('fetchReleasesPage', () => {
     it('should fetch releases from the GitHub API', async () => {
-      // Mock the first page response
+      // Mock successful response with example data
       mockFetch.mockResolvedValueOnce({
         ok: true,
-        json: async () => mockReleasePage1,
+        json: async () => [
+          {
+            url: 'https://api.github.com/repos/clerk/javascript/releases/1',
+            html_url: 'https://github.com/clerk/javascript/releases/tag/v1.0.0',
+            id: 1,
+            tag_name: 'v1.0.0',
+            name: 'Version 1.0.0',
+            draft: false,
+            prerelease: false,
+            created_at: '2023-01-01T00:00:00Z',
+            published_at: '2023-01-01T00:00:00Z',
+            body: 'Example release notes',
+            author: {
+              login: 'clerk-user',
+              avatar_url: 'https://github.com/clerk-user.png',
+              html_url: 'https://github.com/clerk-user',
+            },
+          },
+        ],
         headers: mockHeaders,
       });
 
-      // Mock the second page response
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        json: async () => mockReleasePage2,
-        headers: {
-          get: (name: string) => {
-            switch (name) {
-              case 'x-ratelimit-limit':
-                return '60';
-              case 'x-ratelimit-remaining':
-                return '58';
-              case 'x-ratelimit-reset':
-                return '1609459200';
-              default:
-                return null;
-            }
-          },
-        },
-      });
+      const result = await githubApi.fetchReleasesPage('clerk', 'javascript', 1);
 
-      const result = await fetchAllReleases('test', 'repo');
-
-      // Check that fetch was called with the correct URLs
-      expect(mockFetch).toHaveBeenCalledTimes(2);
+      // Check that fetch was called with the correct URL
       expect(mockFetch).toHaveBeenCalledWith(
-        'https://api.github.com/repos/test/repo/releases?page=1&per_page=100',
-        expect.any(Object),
-      );
-      expect(mockFetch).toHaveBeenCalledWith(
-        'https://api.github.com/repos/test/repo/releases?page=2&per_page=100',
-        expect.any(Object),
+        'https://api.github.com/repos/clerk/javascript/releases?page=1&per_page=100',
+        expect.objectContaining({
+          headers: expect.objectContaining({
+            Accept: 'application/vnd.github.v3+json',
+            'User-Agent': 'RepoScoop',
+          }),
+        }),
       );
 
       // Check the result structure
-      expect(result).toEqual({
-        releases: [...mockReleasePage1, ...mockReleasePage2],
-        meta: {
-          rateLimit: {
-            limit: 60,
-            remaining: 59,
-            reset: 1609459200,
-          },
-          lastPage: 2,
-          totalCount: 3,
+      expect(result.releases).toHaveLength(1);
+      expect(result.releases[0].tag_name).toBe('v1.0.0');
+      expect(result.meta).toEqual({
+        rateLimit: {
+          limit: 60,
+          remaining: 59,
+          reset: 1609459200,
         },
+        lastPage: 2,
       });
-    });
-
-    it.skip('should use example data in development mode for supported repositories', async () => {
-      // This test is skipped due to environment-specific behavior.
-      // Keeping a minimal assertion to satisfy the test runner.
-      expect(true).toBe(true);
     });
 
     it('should handle API errors correctly', async () => {
@@ -214,7 +111,7 @@ describe('GitHub API Service', () => {
       });
 
       // Expect the function to throw an error
-      await expect(fetchAllReleases('test', 'repo')).rejects.toThrow('Repository test/repo not found');
+      await expect(githubApi.fetchReleasesPage('test', 'repo')).rejects.toThrow('Repository test/repo not found');
     });
 
     it('should handle rate limit errors correctly', async () => {
@@ -238,7 +135,7 @@ describe('GitHub API Service', () => {
       });
 
       // Expect the function to throw an error with rate limit information
-      await expect(fetchAllReleases('test', 'repo')).rejects.toThrow('GitHub API rate limit exceeded');
+      await expect(githubApi.fetchReleasesPage('test', 'repo')).rejects.toThrow('GitHub API rate limit exceeded');
     });
   });
 
@@ -257,7 +154,7 @@ describe('GitHub API Service', () => {
         return 0 as unknown as NodeJS.Timeout;
       });
 
-      const result = await retryWithBackoff(mockFn, 3, 10);
+      const result = await githubApi.retryWithBackoff(mockFn, 3, 10);
 
       // Function should be called 3 times
       expect(mockFn).toHaveBeenCalledTimes(3);
@@ -279,7 +176,7 @@ describe('GitHub API Service', () => {
       });
 
       // Expect the function to throw after max retries
-      await expect(retryWithBackoff(mockFn, 2, 10)).rejects.toThrow('Always fails');
+      await expect(githubApi.retryWithBackoff(mockFn, 2, 10)).rejects.toThrow('Always fails');
 
       // Function should be called exactly maxRetries + 1 times
       expect(mockFn).toHaveBeenCalledTimes(3);
