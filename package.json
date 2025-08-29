@@ -14,7 +14,8 @@
     "lint": "prettier --check . && eslint .",
     "lint:fix": "prettier --write . && eslint --fix .",
     "test:unit": "vitest run",
-    "test": "bun run test:unit"
+    "test": "bun run test:unit",
+    "test:ci": "bun run test:unit --coverage --reporter=junit --output-file=junit-unit-tests.xml"
   },
   "lint-staged": {
     "*.{js,ts,svelte,json,md,html}": [
