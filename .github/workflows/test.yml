@@ -47,7 +47,7 @@ jobs:
         run: bun run check
 
       - name: Run tests
-        run: bun run test
+        run: bun run test -- --coverage
 
       - name: Upload test coverage
         uses: codecov/codecov-action@v5
