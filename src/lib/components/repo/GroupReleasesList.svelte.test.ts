@@ -68,9 +68,8 @@ describe('GroupReleasesList.svelte — in-group sorting', () => {
     render(GroupReleasesList, { releases, showCollapseButton: false, onCollapse });
 
     // Change sort-by to version
-    const sortBy = document.getElementById('sort-by') as HTMLSelectElement;
-    sortBy.value = 'version';
-    sortBy.dispatchEvent(new Event('change'));
+    const sortByVersion = document.getElementById('sort-by-version') as HTMLButtonElement;
+    sortByVersion.click();
 
     // Wait a tick for DOM to reflect sorting change
     await new Promise((r) => setTimeout(r, 0));
@@ -93,14 +92,12 @@ describe('GroupReleasesList.svelte — in-group sorting', () => {
     render(GroupReleasesList, { releases, showCollapseButton: false, onCollapse });
 
     // Switch to version sort
-    const sortBy = document.getElementById('sort-by') as HTMLSelectElement;
-    sortBy.value = 'version';
-    sortBy.dispatchEvent(new Event('change'));
+    const sortByVersion = document.getElementById('sort-by-version') as HTMLButtonElement;
+    sortByVersion.click();
 
     // By default desc; toggle to asc
-    const sortOrder = document.getElementById('sort-order') as HTMLSelectElement;
-    sortOrder.value = 'asc';
-    sortOrder.dispatchEvent(new Event('change'));
+    const sortOrderAsc = document.getElementById('sort-order-asc') as HTMLButtonElement;
+    sortOrderAsc.click();
 
     // Wait a tick for DOM to reflect sorting change
     await new Promise((r) => setTimeout(r, 0));
@@ -109,8 +106,8 @@ describe('GroupReleasesList.svelte — in-group sorting', () => {
     expect(versions).toEqual(['not-a-version', 'v1.2.0', 'refs/tags/v2.0.0-rc.1', 'release-3.4.5']);
 
     // Switch back to date sort and keep asc
-    sortBy.value = 'date';
-    sortBy.dispatchEvent(new Event('change'));
+    const sortByDate = document.getElementById('sort-by-date') as HTMLButtonElement;
+    sortByDate.click();
 
     // Wait a tick for DOM to reflect sorting change
     await new Promise((r) => setTimeout(r, 0));
