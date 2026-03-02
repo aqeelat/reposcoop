@@ -44,12 +44,10 @@
   <div class="flex flex-wrap items-center gap-3">
     <div class="flex items-center gap-1.5">
       <span class="text-[11px] font-medium tracking-wide text-gray-500 uppercase dark:text-gray-400">Sort by</span>
-      <div class="join rounded-lg border border-gray-200 bg-white p-0.5 dark:border-gray-700 dark:bg-gray-900">
+      <div class="join" role="group" aria-label="Sort by">
         <button
           id="sort-by-date"
-          class="btn join-item min-w-[5.5rem] border-0 btn-xs {sortBy === 'date'
-            ? 'bg-gray-900 text-white hover:bg-gray-800 dark:bg-gray-100 dark:text-gray-900 dark:hover:bg-white'
-            : 'bg-transparent text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700'}"
+          class="btn join-item min-w-[5.5rem] btn-xs {sortBy === 'date' ? 'btn-active' : ''}"
           onclick={() => (sortBy = 'date')}
           aria-pressed={sortBy === 'date'}
           aria-label="Sort by release date"
@@ -58,9 +56,7 @@
         </button>
         <button
           id="sort-by-version"
-          class="btn join-item min-w-[5.5rem] border-0 btn-xs {sortBy === 'version'
-            ? 'bg-gray-900 text-white hover:bg-gray-800 dark:bg-gray-100 dark:text-gray-900 dark:hover:bg-white'
-            : 'bg-transparent text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700'}"
+          class="btn join-item min-w-[5.5rem] btn-xs {sortBy === 'version' ? 'btn-active' : ''}"
           onclick={() => (sortBy = 'version')}
           aria-pressed={sortBy === 'version'}
           aria-label="Sort by version"
@@ -72,12 +68,10 @@
 
     <div class="flex items-center gap-1.5">
       <span class="text-[11px] font-medium tracking-wide text-gray-500 uppercase dark:text-gray-400">Order</span>
-      <div class="join rounded-lg border border-gray-200 bg-white p-0.5 dark:border-gray-700 dark:bg-gray-900">
+      <div class="join" role="group" aria-label="Sort order">
         <button
           id="sort-order-desc"
-          class="btn join-item min-w-[6.5rem] border-0 btn-xs {sortOrder === 'desc'
-            ? 'bg-gray-900 text-white hover:bg-gray-800 dark:bg-gray-100 dark:text-gray-900 dark:hover:bg-white'
-            : 'bg-transparent text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700'}"
+          class="btn join-item min-w-[6.5rem] btn-xs {sortOrder === 'desc' ? 'btn-active' : ''}"
           onclick={() => (sortOrder = 'desc')}
           aria-pressed={sortOrder === 'desc'}
           aria-label="Sort in descending order"
@@ -86,9 +80,7 @@
         </button>
         <button
           id="sort-order-asc"
-          class="btn join-item min-w-[6.5rem] border-0 btn-xs {sortOrder === 'asc'
-            ? 'bg-gray-900 text-white hover:bg-gray-800 dark:bg-gray-100 dark:text-gray-900 dark:hover:bg-white'
-            : 'bg-transparent text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700'}"
+          class="btn join-item min-w-[6.5rem] btn-xs {sortOrder === 'asc' ? 'btn-active' : ''}"
           onclick={() => (sortOrder = 'asc')}
           aria-pressed={sortOrder === 'asc'}
           aria-label="Sort in ascending order"
