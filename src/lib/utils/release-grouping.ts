@@ -6,6 +6,7 @@
 
 // import type { GitHubRelease } from '$lib/services/github-api';
 import type { Release } from '$lib/services/repo-api';
+import { normalizeVersion } from '$lib/utils/semver';
 // export type { GitHubRelease } from '$lib/services/github-api';
 
 /**
@@ -196,13 +197,23 @@ export function groupReleasesByPackage(releases: Release[], repoName?: string): 
       };
     }
 
+    // Normalize the version using semver utilities where possible
+    const primaryRaw = release.tag_name || release.name || packageInfo.version;
+    const normalizedVersion =
+      // Prefer the authoritative tag value first, then name, then any extracted fragment
+      normalizeVersion(release.tag_name) ||
+      normalizeVersion(release.name) ||
+      normalizeVersion(packageInfo.version) ||
+      // Fallback: keep the original primary raw string to avoid odd extractions like "-a-version"
+      primaryRaw;
+
     // Create a sort key for version sorting (ISO date for now)
     const sortKey = release.published_at || release.created_at;
 
     return {
       ...release,
       packageName: packageInfo.packageName,
-      version: packageInfo.version,
+      version: normalizedVersion,
       sortKey,
       notesExpanded: false, // Initialize as collapsed
     };

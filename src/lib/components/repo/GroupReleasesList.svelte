@@ -1,6 +1,7 @@
 <script lang="ts">
   import { Markdown } from '$lib/components/ui/markdown';
   import type { Release } from '$lib/services/repo-api';
+  import { compareVersions } from '$lib/utils/semver';
 
   let {
     releases,
@@ -13,14 +14,66 @@
     showCollapseButton?: boolean;
     onCollapse: () => void;
   }>();
+
+  // Local sorting state (per group)
+  let sortBy = $state<'date' | 'version'>('date');
+  let sortOrder = $state<'asc' | 'desc'>('desc');
+
+  function compareVersionStrings(aStr?: string | null, bStr?: string | null) {
+    return compareVersions(aStr, bStr);
+  }
+
+  const sorted = $derived.by(() => {
+    const copy = [...releases];
+    if (sortBy === 'date') {
+      copy.sort((a, b) => {
+        const da = new Date(a.published_at || a.created_at).getTime();
+        const db = new Date(b.published_at || b.created_at).getTime();
+        return da - db;
+      });
+    } else {
+      copy.sort((a, b) => compareVersionStrings(a.version || a.tag_name, b.version || b.tag_name));
+    }
+    if (sortOrder === 'desc') copy.reverse();
+    return copy;
+  });
 </script>
+
+<!-- Toolbar: per-group sorting controls -->
+<div class="flex items-center justify-between gap-2 border-t bg-white px-4 py-2 text-xs dark:bg-gray-800">
+  <div class="flex items-center gap-2">
+    <label for="sort-by" class="opacity-70">Sort by</label>
+    <select
+      id="sort-by"
+      class="select-bordered select select-xs"
+      bind:value={sortBy}
+      aria-label="Choose sorting criterion"
+    >
+      <option value="date">Release date</option>
+      <option value="version">Version</option>
+    </select>
+    <label for="sort-order" class="sr-only">Order</label>
+    <select
+      id="sort-order"
+      class="select-bordered select select-xs"
+      bind:value={sortOrder}
+      aria-label="Choose sorting order"
+    >
+      <option value="desc">Desc</option>
+      <option value="asc">Asc</option>
+    </select>
+  </div>
+
+  {#if showCollapseButton}
+    <button class="btn btn-ghost btn-xs" onclick={() => onCollapse()}> Collapse </button>
+  {/if}
+</div>
 
 <ol
   class="divide-y divide-gray-100 overflow-y-auto border-t dark:divide-gray-700"
   style={`max-height: ${typeof maxHeight === 'number' ? `${maxHeight}px` : maxHeight}`}
-  reversed
 >
-  {#each releases as release (release.id)}
+  {#each sorted as release (release.id)}
     <li class="list-none p-4 transition-colors hover:bg-gray-50 dark:hover:bg-gray-700">
       <div class="flex items-start justify-between">
         <div class="min-w-0 flex-1">
@@ -94,13 +147,13 @@
       {/if}
     </li>
   {/each}
-
-  {#if showCollapseButton}
-    <li class="list-none bg-gray-50 p-3 text-center dark:bg-gray-700">
-      <button class="btn btn-ghost btn-sm" onclick={() => onCollapse()}> Collapse </button>
-    </li>
-  {/if}
 </ol>
+
+{#if showCollapseButton}
+  <div class="bg-gray-50 p-3 text-center dark:bg-gray-700">
+    <button class="btn btn-ghost btn-sm" onclick={() => onCollapse()}> Collapse </button>
+  </div>
+{/if}
 
 <style>
   :global(.release-preview) {
