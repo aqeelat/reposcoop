@@ -104,12 +104,41 @@
     <li class="list-none p-4 transition-colors hover:bg-gray-50 dark:hover:bg-gray-700">
       <div class="flex items-start justify-between">
         <div class="min-w-0 flex-1">
-          <h4 class="truncate text-sm font-medium" title={release.name || release.tag_name}>
-            {release.version || release.tag_name}
-          </h4>
-          <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
-            {new Date(release.published_at || release.created_at).toLocaleDateString()}
-          </p>
+          {#if release.body}
+            <button
+              class="btn flex h-auto min-h-0 w-full items-start justify-start gap-2 px-0 py-0 text-left normal-case btn-ghost hover:bg-transparent"
+              onclick={() => (release.notesExpanded = !release.notesExpanded)}
+              aria-expanded={release.notesExpanded || false}
+              aria-controls={`notes-${release.id}`}
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                class="mt-0.5 h-3 w-3 flex-none transition-transform duration-200 {release.notesExpanded
+                  ? 'rotate-90'
+                  : ''}"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                aria-hidden="true"
+              >
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+              </svg>
+              <span class="min-w-0 flex-1">
+                <h4 class="truncate text-sm font-medium" title={release.name || release.tag_name}>
+                  {release.version || release.tag_name}
+                </h4>
+                <span class="mt-1 block text-xs text-gray-500 dark:text-gray-400">
+                  {new Date(release.published_at || release.created_at).toLocaleDateString()}
+                </span>
+              </span>
+            </button>
+          {:else}
+            <h4 class="truncate text-sm font-medium" title={release.name || release.tag_name}>
+              {release.version || release.tag_name}
+            </h4>
+            <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+              {new Date(release.published_at || release.created_at).toLocaleDateString()}
+            </p>
+          {/if}
         </div>
         <a
           href={release.html_url}
@@ -130,33 +159,9 @@
 
       {#if release.body}
         <div class="mt-2 text-sm text-gray-600 dark:text-gray-300">
-          <button
-            class="btn mb-2 flex items-center gap-1 btn-ghost btn-xs"
-            onclick={() => (release.notesExpanded = !release.notesExpanded)}
-            aria-expanded={release.notesExpanded || false}
-            aria-controls={`notes-${release.id}`}
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              class="h-3 w-3 transition-transform duration-200 {release.notesExpanded ? 'rotate-90' : ''}"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-            </svg>
-            {release.notesExpanded ? 'Collapse notes' : 'Expand notes'}
-          </button>
-
-          {#if !release.notesExpanded}
-            <div class="relative max-h-24 overflow-hidden">
-              <Markdown content={release.body.substring(0, 150)} class="release-preview" />
-              <div
-                class="absolute right-0 bottom-0 left-0 h-8 bg-gradient-to-t from-white to-transparent dark:from-gray-800"
-              ></div>
-            </div>
-          {:else}
-            <div id={`notes-${release.id}`}>
-              <Markdown content={release.body} class="release-preview" />
+          {#if release.notesExpanded}
+            <div id={`notes-${release.id}`} class="rounded-box border border-base-300 bg-base-200/60 p-3">
+              <Markdown content={release.body} />
               <div class="mt-2 text-xs text-blue-500">
                 <a
                   href={release.html_url}
@@ -181,55 +186,3 @@
     <button class="btn btn-ghost btn-sm" onclick={() => onCollapse()}> Collapse </button>
   </div>
 {/if}
-
-<style>
-  :global(.release-preview) {
-    font-size: 0.875rem;
-    line-height: 1.5;
-  }
-
-  :global(.release-preview h1),
-  :global(.release-preview h2),
-  :global(.release-preview h3) {
-    font-size: 1rem;
-    margin-top: 0.5rem;
-    margin-bottom: 0.25rem;
-  }
-
-  :global(.release-preview p) {
-    margin-bottom: 0.5rem;
-  }
-
-  :global(.release-preview ul),
-  :global(.release-preview ol) {
-    margin-left: 1rem;
-    margin-bottom: 0.5rem;
-  }
-
-  :global(.release-preview li) {
-    margin-bottom: 0.125rem;
-  }
-
-  :global(.release-preview pre),
-  :global(.release-preview blockquote) {
-    margin-bottom: 0.5rem;
-  }
-
-  .max-h-24 {
-    position: relative;
-  }
-
-  .max-h-24::after {
-    content: '';
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    height: 20px;
-    background: linear-gradient(to bottom, transparent, white);
-  }
-
-  :global(.dark) .max-h-24::after {
-    background: linear-gradient(to bottom, transparent, rgb(31, 41, 55));
-  }
-</style>
