@@ -47,6 +47,7 @@
 
     return sortPackageGroups(groups, sortBy, sortOrder);
   });
+  let singlePackageView = $derived(sortedGroups.length === 1);
 
   // View options
   let viewMode = $state<'list' | 'cards'>('list');
@@ -402,7 +403,7 @@
       <div class={`grid ${viewMode === 'cards' ? 'gap-4 md:grid-cols-2 lg:grid-cols-3' : 'grid-cols-1 divide-y'}`}>
         {#each sortedGroups as group, i (group.name)}
           <div in:fly|local={{ y: 20, delay: 50 * i, duration: 300 }}>
-            <ItemComponent {group} />
+            <ItemComponent {group} collapsible={!singlePackageView} />
           </div>
         {/each}
       </div>
