@@ -5,12 +5,10 @@
 
   let {
     releases,
-    maxHeight = '24rem',
     showCollapseButton = true,
     onCollapse,
   } = $props<{
     releases: Release[];
-    maxHeight?: string | number;
     showCollapseButton?: boolean;
     onCollapse: () => void;
   }>();
@@ -96,10 +94,7 @@
   {/if}
 </div>
 
-<ol
-  class="divide-y divide-gray-100 overflow-y-auto border-t dark:divide-gray-700"
-  style={`max-height: ${typeof maxHeight === 'number' ? `${maxHeight}px` : maxHeight}`}
->
+<ol class="divide-y divide-gray-100 border-t dark:divide-gray-700">
   {#each sorted as release (release.id)}
     <li class="list-none p-4 transition-colors hover:bg-gray-50 dark:hover:bg-gray-700">
       <div class="flex items-start justify-between">
