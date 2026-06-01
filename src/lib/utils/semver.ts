@@ -1,4 +1,4 @@
-import { compare as semverCompare, clean as semverClean, coerce as semverCoerce } from 'semver';
+import { compare as semverCompare, clean as semverClean, coerce as semverCoerce, parse as semverParse } from 'semver';
 
 /**
  * Normalize/clean a version-like string using the semver package (loose mode).
@@ -19,6 +19,26 @@ export function normalizeVersion(input?: string | null): string | null {
   if (cleaned) return cleaned;
   const coerced = semverCoerce(stripped, { loose: true });
   return coerced ? coerced.version : null;
+}
+
+/**
+ * Detect whether a version-like string contains a semver pre-release segment.
+ * Parses the raw input directly (strips `refs/tags/` and `v` prefix) and checks
+ * for pre-release identifiers (e.g. `-alpha.1`, `-beta.0`, `-rc.2`).
+ * Returns false for non-parsable inputs.
+ */
+export function isPrerelease(version?: string | null): boolean {
+  const raw = (version || '').trim();
+  if (!raw) return false;
+  const stripped = raw
+    .replace(/^refs\/tags\//i, '')
+    .replace(/^v(?=\d)/i, '')
+    .trim();
+  const parsed =
+    semverParse(stripped, { loose: true }) ??
+    semverParse(semverClean(stripped, { loose: true }) ?? '', { loose: true });
+  if (parsed) return parsed.prerelease.length > 0;
+  return false;
 }
 
 /**

@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { groupReleasesByPackage } from './release-grouping';
+import { isPrerelease } from './semver';
 import type { Release } from '$lib/services/repo-api';
 
 function makeRelease(id: number, tag: string, dateISO: string, name?: string): Release {
@@ -39,5 +40,25 @@ describe('groupReleasesByPackage — semver normalization of versions', () => {
     expect(versions).toContain('3.4.5');
     // Unparsable should remain as-is
     expect(versions).toContain('not-a-version');
+  });
+});
+
+describe('isPrerelease', () => {
+  it.each([
+    ['1.2.3', false],
+    ['v1.2.3', false],
+    ['1.2.3-alpha.1', true],
+    ['v1.2.3-beta.0', true],
+    ['2.0.0-rc.1', true],
+    ['3.0.0-next.4', true],
+    ['1.0.0-canary.20240101', true],
+    ['refs/tags/v2.0.0-beta.1', true],
+    ['0.0.1', false],
+    ['not-a-version', false],
+    ['', false],
+    [null, false],
+    [undefined, false],
+  ])('isPrerelease(%j) === %s', (input, expected) => {
+    expect(isPrerelease(input as string | null | undefined)).toBe(expected);
   });
 });
