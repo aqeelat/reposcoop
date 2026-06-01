@@ -9,6 +9,7 @@
     type GroupedReleases,
     type PackageGroup,
   } from '$lib/utils/release-grouping';
+  import { isPrerelease } from '$lib/utils/semver';
   import GroupListItem from '$lib/components/repo/GroupListItem.svelte';
   import GroupCardItem from '$lib/components/repo/GroupCardItem.svelte';
 
@@ -33,19 +34,48 @@
 
   // Filter options
   let filterText = $state('');
+  let hidePrereleases = $state(false);
 
   // Sorting options
   let sortBy = $state<'name' | 'count' | 'date'>('name');
   let sortOrder = $state<'asc' | 'desc'>('asc');
 
+  function isStableRelease(r: Release): boolean {
+    return !r.prerelease && !isPrerelease(r.tag_name);
+  }
+
   let sortedGroups: PackageGroup[] = $derived.by(() => {
     if (!groupedReleases) return [];
+
     let groups = groupedReleases.groups;
+
+    if (hidePrereleases) {
+      groups = groups
+        .map((group) => {
+          const filtered = group.releases.filter(isStableRelease);
+          if (filtered.length === 0) return null;
+          return {
+            ...group,
+            releases: filtered,
+            latestRelease: filtered[0],
+            releaseCount: filtered.length,
+          } satisfies PackageGroup;
+        })
+        .filter((g): g is PackageGroup => g !== null);
+    }
 
     const searchTerm = filterText.toLowerCase();
     groups = groups.filter((group) => group.name.toLowerCase().includes(searchTerm));
 
     return sortPackageGroups(groups, sortBy, sortOrder);
+  });
+
+  let filteredReleaseCount = $derived.by(() => {
+    if (!groupedReleases) return 0;
+    if (!hidePrereleases) return groupedReleases.totalReleases;
+    return groupedReleases.groups
+      .map((group) => group.releases.filter(isStableRelease))
+      .reduce((sum, releases) => sum + releases.length, 0);
   });
   let singlePackageView = $derived(sortedGroups.length === 1);
 
@@ -248,6 +278,29 @@
           </button>
         </div>
 
+        <!-- Pre-release filter -->
+        <button
+          class="btn btn-sm {hidePrereleases ? 'btn-active' : ''}"
+          onclick={() => (hidePrereleases = !hidePrereleases)}
+          aria-label="Hide pre-releases"
+          aria-pressed={hidePrereleases}
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            class="h-4 w-4"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            ><path d="M12 20h9" /><path
+              d="M16.376 3.622a1 1 0 013.002 3.002L7.368 18.635a2 2 0 01-.855.506l-2.872.838a.5.5 0 01-.62-.62l.838-2.872a2 2 0 01.506-.854z"
+            /></svg
+          >
+          Hide pre-releases
+        </button>
+
         <!-- View Controls -->
         <div class="join" role="group" aria-label="View options">
           <button
@@ -388,7 +441,12 @@
           <div>
             <h2 class="text-lg font-semibold">Repository Summary</h2>
             <p class="text-sm text-gray-600 dark:text-gray-300">
-              Found {groupedReleases.totalReleases} releases across {groupedReleases.groups.length} packages
+              {#if hidePrereleases}
+                Showing {filteredReleaseCount} of {groupedReleases.totalReleases} releases across
+                {sortedGroups.length} packages
+              {:else}
+                Found {groupedReleases.totalReleases} releases across {groupedReleases.groups.length} packages
+              {/if}
             </p>
           </div>
           {#if apiResponse?.meta?.rateLimit}
