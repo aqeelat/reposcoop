@@ -54,6 +54,25 @@ export class GitHubApiProvider implements RepoApiProvider {
    * @throws Error if the API request fails
    */
   public async fetchReleasesPage(owner: string, repo: string, page = 1, perPage = 100): Promise<ApiResponse> {
+    const cacheKey = `reposcoop_cache_${owner}_${repo}_p${page}_pp${perPage}`;
+    const cacheTtl = 5 * 60 * 1000; // 5 minutes in milliseconds
+
+    // Try to get from client-side cache first (sessionStorage)
+    try {
+      if (typeof sessionStorage !== 'undefined') {
+        const cached = sessionStorage.getItem(cacheKey);
+        if (cached) {
+          const { data, timestamp } = JSON.parse(cached);
+          if (Date.now() - timestamp < cacheTtl) {
+            return data as ApiResponse;
+          }
+        }
+      }
+    } catch (e) {
+      // Silently fail cache read errors
+      console.warn('Cache read error:', e);
+    }
+
     const url = `https://api.github.com/repos/${owner}/${repo}/releases?page=${page}&per_page=${perPage}`;
 
     try {
@@ -81,13 +100,31 @@ export class GitHubApiProvider implements RepoApiProvider {
       const rateLimit = this.extractRateLimitInfo(response.headers);
       const lastPage = this.extractLastPage(response.headers.get('Link'));
 
-      return {
+      const result: ApiResponse = {
         releases,
         meta: {
           rateLimit,
           lastPage,
         },
       };
+
+      // Save to client-side cache
+      try {
+        if (typeof sessionStorage !== 'undefined') {
+          sessionStorage.setItem(
+            cacheKey,
+            JSON.stringify({
+              data: result,
+              timestamp: Date.now(),
+            }),
+          );
+        }
+      } catch (e) {
+        // Silently fail cache write errors (e.g. quota exceeded)
+        console.warn('Cache write error:', e);
+      }
+
+      return result;
     } catch (error) {
       if (error instanceof Error) {
         throw error;

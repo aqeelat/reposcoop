@@ -10,6 +10,16 @@
    */
   import { marked } from 'marked';
   import DOMPurify from 'dompurify';
+  import Prism from 'prismjs';
+
+  // Import Prism themes and languages as needed
+  import 'prismjs/themes/prism-tomorrow.css';
+  // Common languages for release notes
+  import 'prismjs/components/prism-javascript';
+  import 'prismjs/components/prism-typescript';
+  import 'prismjs/components/prism-json';
+  import 'prismjs/components/prism-bash';
+  import 'prismjs/components/prism-markdown';
 
   /**
    * Component props
@@ -17,6 +27,9 @@
    * @property {string} [class] - Additional CSS classes to apply to the container
    */
   let { content = '', class: className = '' } = $props();
+
+  // Reference to the container element
+  let container = $state<HTMLDivElement>();
 
   // Rendered HTML content
   let html = $state('');
@@ -35,9 +48,16 @@
       html = DOMPurify.sanitize(rawHtml);
     }
   });
+
+  // Apply syntax highlighting after HTML is rendered or changed
+  $effect(() => {
+    if (html && container) {
+      Prism.highlightAllUnder(container);
+    }
+  });
 </script>
 
-<div class="markdown-content {className}">
+<div bind:this={container} class="markdown-content {className}">
   <!-- eslint-disable-next-line svelte/no-at-html-tags -->
   {@html html}
 </div>
