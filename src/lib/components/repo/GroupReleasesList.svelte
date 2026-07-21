@@ -101,7 +101,7 @@
         <div class="min-w-0 flex-1">
           {#if release.body}
             <button
-              class="btn flex h-auto min-h-0 w-full items-start justify-start gap-2 px-0 py-0 text-left normal-case btn-ghost hover:bg-transparent"
+              class="btn flex h-auto min-h-0 w-full items-start justify-start gap-2 btn-ghost px-0 py-0 text-left normal-case hover:bg-transparent"
               onclick={() => (release.notesExpanded = !release.notesExpanded)}
               aria-expanded={release.notesExpanded || false}
               aria-controls={`notes-${release.id}`}

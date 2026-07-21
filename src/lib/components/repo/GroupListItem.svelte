@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { PackageGroup } from '$lib/utils/release-grouping';
   import GroupReleasesList from './GroupReleasesList.svelte';
+  import { untrack } from 'svelte';
 
   let {
     group,
@@ -12,11 +13,16 @@
     'on:toggle'?: (detail: { expanded: boolean }) => void;
   }>();
 
+  let isExpanded = $state(untrack(() => group.isExpanded ?? false));
+  $effect(() => {
+    group.isExpanded = isExpanded;
+  });
+
   function toggle(e?: Event) {
     if (!collapsible) return;
     if (e) e.stopPropagation();
-    group.isExpanded = !group.isExpanded;
-    ontoggle?.({ expanded: !!group.isExpanded });
+    isExpanded = !isExpanded;
+    ontoggle?.({ expanded: isExpanded });
   }
 </script>
 
@@ -27,7 +33,7 @@
       class="flex cursor-pointer items-center gap-3 px-2 py-3 hover:bg-gray-50 sm:px-3 dark:hover:bg-gray-800/70"
       role="button"
       tabindex="0"
-      aria-expanded={group.isExpanded || false}
+      aria-expanded={isExpanded || false}
       aria-controls={`releases-${group.name.replace(/[^a-zA-Z0-9]/g, '-')}`}
       onclick={toggle}
       onkeydown={(e) => {
@@ -61,7 +67,7 @@
       <div class="flex flex-none items-center gap-2 pl-2">
         <svg
           xmlns="http://www.w3.org/2000/svg"
-          class="h-4 w-4 transition-transform duration-200 {group.isExpanded ? 'rotate-180' : ''}"
+          class="h-4 w-4 transition-transform duration-200 {isExpanded ? 'rotate-180' : ''}"
           fill="none"
           viewBox="0 0 24 24"
           stroke="currentColor"
@@ -95,12 +101,12 @@
     </div>
   {/if}
 
-  {#if group.isExpanded || !collapsible}
+  {#if isExpanded || !collapsible}
     <div id={`releases-${group.name.replace(/[^a-zA-Z0-9]/g, '-')}`} class="bg-gray-50/70 dark:bg-gray-800/60">
       <GroupReleasesList
         releases={group.releases}
         showCollapseButton={collapsible}
-        onCollapse={() => (group.isExpanded = false)}
+        onCollapse={() => (isExpanded = false)}
       />
     </div>
   {/if}

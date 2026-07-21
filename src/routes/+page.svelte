@@ -171,7 +171,7 @@
               {#each recentRepos as repo (repo.fullName)}
                 <button
                   onclick={() => viewRecentRepo(repo)}
-                  class="btn h-auto w-full justify-between p-4 normal-case btn-ghost"
+                  class="btn h-auto w-full justify-between btn-ghost p-4 normal-case"
                 >
                   <span class="text-left">
                     <span class="block font-medium">{repo.fullName}</span>

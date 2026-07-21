@@ -92,7 +92,7 @@ export class GitHubApiProvider implements RepoApiProvider {
       if (error instanceof Error) {
         throw error;
       }
-      throw new Error('Failed to fetch releases from GitHub API');
+      throw new Error('Failed to fetch releases from GitHub API', { cause: error });
     }
   }
 

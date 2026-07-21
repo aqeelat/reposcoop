@@ -95,9 +95,7 @@ import MyComponent from './MyComponent.svelte';
 describe('MyComponent', () => {
   it('should render without errors', () => {
     expect(() => {
-      render(MyComponent, {
-        /* props */
-      });
+      render(MyComponent, {/* props */});
     }).not.toThrow();
   });
 });
