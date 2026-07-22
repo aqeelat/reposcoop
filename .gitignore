@@ -1,6 +1,10 @@
 test-results
 node_modules
 
+# Test artifacts
+__screenshots__
+.vitest-attachments
+
 # Output
 .output
 .vercel

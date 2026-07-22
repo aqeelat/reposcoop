@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { PackageGroup } from '$lib/utils/release-grouping';
   import GroupReleasesList from './GroupReleasesList.svelte';
+  import { untrack } from 'svelte';
 
   let {
     group,
@@ -12,11 +13,16 @@
     'on:toggle'?: (detail: { expanded: boolean }) => void;
   }>();
 
+  let isExpanded = $state(untrack(() => group.isExpanded ?? false));
+  $effect(() => {
+    group.isExpanded = isExpanded;
+  });
+
   function toggle(e?: Event) {
     if (!collapsible) return;
     if (e) e.stopPropagation();
-    group.isExpanded = !group.isExpanded;
-    ontoggle?.({ expanded: !!group.isExpanded });
+    isExpanded = !isExpanded;
+    ontoggle?.({ expanded: isExpanded });
   }
 </script>
 
@@ -36,7 +42,7 @@
       }}
       tabindex="0"
       role="button"
-      aria-expanded={group.isExpanded || false}
+      aria-expanded={isExpanded || false}
       aria-controls={`releases-${group.name.replace(/[^a-zA-Z0-9]/g, '-')}`}
     >
       <div class="flex items-center justify-between">
@@ -47,7 +53,7 @@
           </span>
           <svg
             xmlns="http://www.w3.org/2000/svg"
-            class="h-4 w-4 transition-transform duration-200 {group.isExpanded ? 'rotate-180' : ''}"
+            class="h-4 w-4 transition-transform duration-200 {isExpanded ? 'rotate-180' : ''}"
             viewBox="0 0 24 24"
             stroke="currentColor"
           >
@@ -76,7 +82,7 @@
   {/if}
 
   <!-- Summary (collapsed) -->
-  {#if !group.isExpanded && collapsible}
+  {#if !isExpanded && collapsible}
     <div class="p-4">
       <p class="mb-2 text-sm">
         Latest version: <span class="font-mono">{group.latestRelease.version || group.latestRelease.tag_name}</span>
@@ -85,7 +91,7 @@
         class="btn w-full btn-outline btn-sm"
         onclick={(e) => {
           e.stopPropagation();
-          group.isExpanded = true;
+          isExpanded = true;
         }}
       >
         View Releases
@@ -94,12 +100,12 @@
   {/if}
 
   <!-- Expanded Releases -->
-  {#if group.isExpanded || !collapsible}
+  {#if isExpanded || !collapsible}
     <div id={`releases-${group.name.replace(/[^a-zA-Z0-9]/g, '-')}`}>
       <GroupReleasesList
         releases={group.releases}
         showCollapseButton={collapsible}
-        onCollapse={() => (group.isExpanded = false)}
+        onCollapse={() => (isExpanded = false)}
       />
     </div>
   {/if}
