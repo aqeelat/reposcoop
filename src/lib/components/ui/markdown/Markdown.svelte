@@ -76,6 +76,14 @@
     margin-bottom: 1em;
   }
 
+  .markdown-content :global(ul) {
+    list-style-type: disc;
+  }
+
+  .markdown-content :global(ol) {
+    list-style-type: decimal;
+  }
+
   .markdown-content :global(li) {
     margin-bottom: 0.25em;
   }
