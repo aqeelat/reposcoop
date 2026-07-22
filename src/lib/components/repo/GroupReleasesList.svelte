@@ -2,6 +2,7 @@
   import { Markdown } from '$lib/components/ui/markdown';
   import type { Release } from '$lib/services/repo-api';
   import { compareVersions } from '$lib/utils/semver';
+  import { SvelteSet } from 'svelte/reactivity';
 
   let {
     releases,
@@ -16,6 +17,12 @@
   // Local sorting state (per group)
   let sortBy = $state<'date' | 'version'>('date');
   let sortOrder = $state<'asc' | 'desc'>('desc');
+  let expandedIds = new SvelteSet<number>();
+
+  function toggleNotes(id: number) {
+    if (expandedIds.has(id)) expandedIds.delete(id);
+    else expandedIds.add(id);
+  }
 
   function compareVersionStrings(aStr?: string | null, bStr?: string | null) {
     return compareVersions(aStr, bStr);
@@ -102,13 +109,13 @@
           {#if release.body}
             <button
               class="btn flex h-auto min-h-0 w-full items-start justify-start gap-2 btn-ghost px-0 py-0 text-left normal-case hover:bg-transparent"
-              onclick={() => (release.notesExpanded = !release.notesExpanded)}
-              aria-expanded={release.notesExpanded || false}
+              onclick={() => toggleNotes(release.id)}
+              aria-expanded={expandedIds.has(release.id) || false}
               aria-controls={`notes-${release.id}`}
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
-                class="mt-0.5 h-3 w-3 flex-none transition-transform duration-200 {release.notesExpanded
+                class="mt-0.5 h-3 w-3 flex-none transition-transform duration-200 {expandedIds.has(release.id)
                   ? 'rotate-90'
                   : ''}"
                 viewBox="0 0 24 24"
@@ -154,7 +161,7 @@
 
       {#if release.body}
         <div class="mt-2 text-sm text-gray-600 dark:text-gray-300">
-          {#if release.notesExpanded}
+          {#if expandedIds.has(release.id)}
             <div id={`notes-${release.id}`} class="rounded-box border border-base-300 bg-base-200/60 p-3">
               <Markdown content={release.body} />
               <div class="mt-2 text-xs text-blue-500">

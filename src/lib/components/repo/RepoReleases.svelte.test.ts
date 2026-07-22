@@ -195,4 +195,92 @@ describe('RepoReleases.svelte', () => {
       await expect.element(page.getByRole('heading', { level: 4, name: '1.1.0' })).not.toBeInTheDocument();
     });
   });
+
+  describe('error and empty states', () => {
+    it('shows error message when fetch fails on first page', async () => {
+      vi.clearAllMocks();
+      mockedGithubApi.retryWithBackoff.mockRejectedValue(new Error('Repository acme/missing not found.'));
+
+      render(RepoReleases, { owner: 'acme', repo: 'missing' });
+
+      await expect.element(page.getByRole('heading', { name: 'Error Loading Repository' })).toBeInTheDocument();
+      await expect.element(page.getByText('Repository acme/missing not found.')).toBeInTheDocument();
+    });
+
+    it('shows no releases state when API returns empty list', async () => {
+      vi.clearAllMocks();
+      setupResponse([]);
+
+      render(RepoReleases, { owner: 'acme', repo: 'empty' });
+
+      await expect.element(page.getByRole('heading', { name: 'No Releases Found' })).toBeInTheDocument();
+    });
+
+    it('shows rate limit state when rate limited on first page with no data', async () => {
+      vi.clearAllMocks();
+      mockedGithubApi.retryWithBackoff.mockRejectedValue(
+        new Error('GitHub API rate limit exceeded. Resets at 12:00:00 PM'),
+      );
+
+      render(RepoReleases, { owner: 'acme', repo: 'widget' });
+
+      await expect.element(page.getByRole('heading', { name: 'GitHub API rate limit reached' })).toBeInTheDocument();
+    });
+  });
+
+  describe('view and sort controls', () => {
+    it('switches between list and card view', async () => {
+      vi.clearAllMocks();
+      const releases = [makeRelease({ tag_name: 'pkg-a@1.0.0' }), makeRelease({ tag_name: 'pkg-b@2.0.0' })];
+      setupResponse(releases);
+
+      render(RepoReleases, { owner: 'acme', repo: 'widget' });
+      await expect.element(page.getByRole('heading', { level: 2, name: 'Repository Summary' })).toBeInTheDocument();
+
+      await page.getByRole('button', { name: 'Card view' }).click();
+      await expect.element(page.getByRole('button', { name: 'Card view' })).toHaveAttribute('aria-pressed', 'true');
+
+      await page.getByRole('button', { name: 'List view' }).click();
+      await expect.element(page.getByRole('button', { name: 'List view' })).toHaveAttribute('aria-pressed', 'true');
+    });
+
+    it('sorts by name, count, and date', async () => {
+      vi.clearAllMocks();
+      const releases = [
+        makeRelease({ tag_name: 'pkg-a@1.0.0' }),
+        makeRelease({ tag_name: 'pkg-a@1.1.0' }),
+        makeRelease({ tag_name: 'pkg-b@2.0.0' }),
+      ];
+      setupResponse(releases);
+
+      render(RepoReleases, { owner: 'acme', repo: 'widget' });
+      await expect.element(page.getByRole('heading', { level: 2, name: 'Repository Summary' })).toBeInTheDocument();
+
+      await page.getByRole('button', { name: /Sort by count/i }).click();
+      await expect
+        .element(page.getByRole('button', { name: /Sort by count/i }))
+        .toHaveAttribute('aria-pressed', 'true');
+
+      await page.getByRole('button', { name: /Sort by date/i }).click();
+      await expect.element(page.getByRole('button', { name: /Sort by date/i })).toHaveAttribute('aria-pressed', 'true');
+
+      await page.getByRole('button', { name: /Sort by name/i }).click();
+      await expect.element(page.getByRole('button', { name: /Sort by name/i })).toHaveAttribute('aria-pressed', 'true');
+    });
+
+    it('filters packages by text', async () => {
+      vi.clearAllMocks();
+      const releases = [makeRelease({ tag_name: 'pkg-a@1.0.0' }), makeRelease({ tag_name: 'pkg-b@2.0.0' })];
+      setupResponse(releases);
+
+      render(RepoReleases, { owner: 'acme', repo: 'widget' });
+      await expect.element(page.getByRole('heading', { level: 2, name: 'Repository Summary' })).toBeInTheDocument();
+
+      const filterInput = page.getByRole('textbox', { name: 'Filter packages by name' });
+      await filterInput.fill('pkg-a');
+
+      await expect.element(page.getByRole('heading', { level: 3, name: 'pkg-a' })).toBeInTheDocument();
+      await expect.element(page.getByRole('heading', { level: 3, name: 'pkg-b' })).not.toBeInTheDocument();
+    });
+  });
 });

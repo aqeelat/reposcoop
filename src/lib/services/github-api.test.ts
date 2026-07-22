@@ -139,6 +139,27 @@ describe('GitHub API Service', () => {
       // Expect the function to throw an error with rate limit information
       await expect(githubApi.fetchReleasesPage('test', 'repo')).rejects.toThrow('GitHub API rate limit exceeded');
     });
+
+    it('should throw on generic non-404 non-rate-limit errors', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: false,
+        status: 500,
+        statusText: 'Internal Server Error',
+        headers: { get: () => null },
+      });
+
+      await expect(githubApi.fetchReleasesPage('test', 'repo')).rejects.toThrow(
+        'GitHub API error: 500 Internal Server Error',
+      );
+    });
+
+    it('should wrap non-Error throwables with cause', async () => {
+      mockFetch.mockRejectedValueOnce('network failure');
+
+      await expect(githubApi.fetchReleasesPage('test', 'repo')).rejects.toThrow(
+        'Failed to fetch releases from GitHub API',
+      );
+    });
   });
 
   describe('retryWithBackoff', () => {
@@ -203,6 +224,37 @@ describe('GitHub API Service', () => {
 
       // Function should be called only once (no retries)
       expect(mockFn).toHaveBeenCalledTimes(1);
+    });
+
+    it('should wait until rate limit reset then retry', async () => {
+      const mockFn = vi.fn();
+      const futureTime = new Date(Date.now() + 5000).toLocaleTimeString();
+      mockFn.mockRejectedValueOnce(new Error(`GitHub API rate limit exceeded. Resets at ${futureTime}`));
+      mockFn.mockResolvedValueOnce('Success');
+
+      vi.spyOn(globalThis, 'setTimeout').mockImplementation((callback: () => void) => {
+        callback();
+        return 0 as unknown as NodeJS.Timeout;
+      });
+
+      const result = await githubApi.retryWithBackoff(mockFn, 3, 10);
+
+      expect(result).toBe('Success');
+      expect(mockFn).toHaveBeenCalledTimes(2);
+    });
+
+    it('should not wait if rate limit reset is more than 15 minutes away', async () => {
+      const mockFn = vi.fn();
+      const farFutureTime = new Date(Date.now() + 20 * 60 * 1000).toLocaleTimeString();
+      const rateLimitError = new Error(`GitHub API rate limit exceeded. Resets at ${farFutureTime}`);
+      mockFn.mockRejectedValue(rateLimitError);
+
+      vi.spyOn(globalThis, 'setTimeout').mockImplementation((callback: () => void) => {
+        callback();
+        return 0 as unknown as NodeJS.Timeout;
+      });
+
+      await expect(githubApi.retryWithBackoff(mockFn, 3, 10)).rejects.toThrow(rateLimitError);
     });
   });
 });
