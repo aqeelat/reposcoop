@@ -1,4 +1,5 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
+import { page } from 'vitest/browser';
 import { render } from 'vitest-browser-svelte';
 import GroupReleasesList from './GroupReleasesList.svelte';
 
@@ -115,5 +116,43 @@ describe('GroupReleasesList.svelte — in-group sorting', () => {
     versions = getRenderedVersions();
     // Expect oldest to newest now
     expect(versions).toEqual(['not-a-version', 'release-3.4.5', 'v1.2.0', 'refs/tags/v2.0.0-rc.1']);
+  });
+});
+
+describe('GroupReleasesList.svelte — release notes', () => {
+  it('expands and collapses release notes when body is present', async () => {
+    const releases = [makeRelease(1, 'v1.0.0', '2025-01-01T00:00:00.000Z', { body: '## Release notes\n- bug fix' })];
+
+    render(GroupReleasesList, { releases, showCollapseButton: false, onCollapse });
+
+    const toggle = page.getByRole('button', { name: /v1\.0\.0/i });
+    await expect.element(toggle).toHaveAttribute('aria-expanded', 'false');
+
+    await toggle.click();
+    await expect.element(toggle).toHaveAttribute('aria-expanded', 'true');
+    await expect.element(page.getByText('Release notes')).toBeVisible();
+
+    await toggle.click();
+    await expect.element(toggle).toHaveAttribute('aria-expanded', 'false');
+  });
+
+  it('renders release without body as plain heading (no toggle)', async () => {
+    const releases = [makeRelease(1, 'v1.0.0', '2025-01-01T00:00:00.000Z', { body: '' })];
+
+    render(GroupReleasesList, { releases, showCollapseButton: false, onCollapse });
+
+    await expect.element(page.getByRole('heading', { level: 4, name: 'v1.0.0' })).toBeInTheDocument();
+    expect(document.querySelector('button[aria-expanded]')).toBeNull();
+  });
+
+  it('shows collapse button when showCollapseButton is true', async () => {
+    const releases = [makeRelease(1, 'v1.0.0', '2025-01-01T00:00:00.000Z')];
+    const onCollapse = vi.fn();
+
+    render(GroupReleasesList, { releases, showCollapseButton: true, onCollapse });
+
+    const collapseButton = page.getByRole('button', { name: /collapse/i }).first();
+    await collapseButton.click();
+    expect(onCollapse).toHaveBeenCalled();
   });
 });

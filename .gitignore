@@ -4,6 +4,12 @@ node_modules
 # Test artifacts
 __screenshots__
 .vitest-attachments
+coverage
+junit-unit-tests.xml
+
+# Test artifacts
+__screenshots__
+.vitest-attachments
 
 # Output
 .output
