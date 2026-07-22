@@ -27,7 +27,7 @@
   // Pagination state
   let currentPage = $state(0);
   let lastPage = $state<number | null>(null);
-  const initialPagesToLoad = 1;
+  const initialPagesToLoad = 5;
   const pagesPerClick = 1;
   let rateLimitMessage = $state<string | null>(null);
   let rateLimitHitOnFirst = $state(false);
