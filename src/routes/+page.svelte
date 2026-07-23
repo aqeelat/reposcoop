@@ -67,7 +67,7 @@
 
       // Simulate a short delay to show loading state
       setTimeout(() => {
-        goto(`/r/${owner}/${repo}`);
+        goto(`/${owner}/${repo}`);
         isLoading = false;
       }, 500);
     } else {
@@ -76,7 +76,7 @@
   }
 
   function viewRecentRepo(repo: RecentRepo): void {
-    goto(`/r/${repo.owner}/${repo.repo}`);
+    goto(`/${repo.owner}/${repo.repo}`);
   }
 </script>
 

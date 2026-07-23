@@ -42,7 +42,8 @@ RepoScoop transforms this experience by:
 
 1. **Routing Structure**
    - `/` - Home page with repository input form
-   - `/r/:owner/:repo` - Repository view page showing grouped releases
+   - `/:owner/:repo` - Repository view page showing grouped releases (trailing path ignored, e.g. `/:owner/:repo/releases`)
+   - `/r/:owner/:repo` - Redirects to `/:owner/:repo` (back-compat)
    - `/about` - Information about the project
 
 2. **Component Hierarchy**
