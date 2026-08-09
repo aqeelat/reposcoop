@@ -77,7 +77,22 @@ describe('Home Page', () => {
     // Wait for the timeout in the component
     await new Promise((resolve) => setTimeout(resolve, 600));
 
-    expect(navigation.goto).toHaveBeenCalledWith('/r/sveltejs/kit');
+    expect(navigation.goto).toHaveBeenCalledWith('/sveltejs/kit');
+  });
+
+  it('should navigate to repo when clicking a recently viewed repo', async () => {
+    localStorageMock.setItem(
+      'recentRepos',
+      JSON.stringify([
+        { owner: 'sveltejs', repo: 'kit', fullName: 'sveltejs/kit', timestamp: new Date().toISOString() },
+      ]),
+    );
+
+    render(Page);
+
+    await page.getByText('sveltejs/kit').click();
+
+    expect(navigation.goto).toHaveBeenCalledWith('/sveltejs/kit');
   });
 
   it('should save repository to recently viewed in localStorage', async () => {
