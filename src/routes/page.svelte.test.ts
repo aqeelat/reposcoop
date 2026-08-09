@@ -80,6 +80,21 @@ describe('Home Page', () => {
     expect(navigation.goto).toHaveBeenCalledWith('/sveltejs/kit');
   });
 
+  it('should navigate to repo when clicking a recently viewed repo', async () => {
+    localStorageMock.setItem(
+      'recentRepos',
+      JSON.stringify([
+        { owner: 'sveltejs', repo: 'kit', fullName: 'sveltejs/kit', timestamp: new Date().toISOString() },
+      ]),
+    );
+
+    render(Page);
+
+    await page.getByText('sveltejs/kit').click();
+
+    expect(navigation.goto).toHaveBeenCalledWith('/sveltejs/kit');
+  });
+
   it('should save repository to recently viewed in localStorage', async () => {
     render(Page);
 
