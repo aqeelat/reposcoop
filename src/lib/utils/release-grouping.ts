@@ -39,6 +39,16 @@ export interface GroupedReleases {
 }
 
 /**
+ * Generic descriptors that appear in release titles but are not package names
+ * (e.g. "Release v4.8.1", "Version 6.0.0"). These collapse to the default group.
+ */
+const DEFAULT_PACKAGE_NAMES = new Set(['default', 'version', 'release']);
+
+function isDefaultPackageName(name: string): boolean {
+  return !name || DEFAULT_PACKAGE_NAMES.has(name.trim().toLowerCase());
+}
+
+/**
  * Common patterns for package names in release titles
  */
 const PACKAGE_PATTERNS = [
@@ -111,8 +121,13 @@ export function extractPackageInfo(title: string): { packageName: string; versio
   const parts = title.split(/[\s-]/);
   if (parts.length > 1) {
     const first = parts[0];
-    // Treat version-like or generic 'Version' prefixes as default
-    if (first.toLowerCase() === 'version' || first.toLowerCase() === 'v' || /^\d+(?:\.\d+){1,3}$/.test(first)) {
+    // Treat version-like or generic 'Version'/'Release' prefixes as default
+    if (
+      first.toLowerCase() === 'version' ||
+      first.toLowerCase() === 'release' ||
+      first.toLowerCase() === 'v' ||
+      /^\d+(?:\.\d+){1,3}$/.test(first)
+    ) {
       return {
         packageName: 'default',
         version: title.replace(/^version\s+|^v\s+/i, '').trim(),
@@ -146,15 +161,11 @@ export function detectPackagePatterns(releases: Release[]): string[] {
     const tagInfo = extractPackageInfo(release.tag_name);
     const nameInfo = extractPackageInfo(release.name);
 
-    if (tagInfo?.packageName && tagInfo.packageName !== 'default' && tagInfo.packageName.toLowerCase() !== 'version') {
+    if (tagInfo?.packageName && !isDefaultPackageName(tagInfo.packageName)) {
       patterns.add(tagInfo.packageName);
     }
 
-    if (
-      nameInfo?.packageName &&
-      nameInfo.packageName !== 'default' &&
-      nameInfo.packageName.toLowerCase() !== 'version'
-    ) {
+    if (nameInfo?.packageName && !isDefaultPackageName(nameInfo.packageName)) {
       patterns.add(nameInfo.packageName);
     }
   }
@@ -177,14 +188,9 @@ export function groupReleasesByPackage(releases: Release[], repoName?: string): 
 
     if (!packageInfo) {
       packageInfo = extractPackageInfo(release.name);
-    } else if (packageInfo.packageName === 'default') {
+    } else if (isDefaultPackageName(packageInfo.packageName)) {
       const nameInfo = extractPackageInfo(release.name);
-      if (
-        nameInfo &&
-        nameInfo.packageName &&
-        nameInfo.packageName !== 'default' &&
-        nameInfo.packageName.toLowerCase() !== 'version'
-      ) {
+      if (nameInfo && nameInfo.packageName && !isDefaultPackageName(nameInfo.packageName)) {
         packageInfo = nameInfo;
       }
     }
@@ -222,9 +228,7 @@ export function groupReleasesByPackage(releases: Release[], repoName?: string): 
   // Determine repo group name
   const repoGroupName = repoName && repoName.trim().length > 0 ? repoName : 'repository';
   // Consider patterns meaningful if there is at least one non-default release
-  const nonDefaultCount = groupedReleases.filter(
-    (r) => r.packageName && r.packageName !== 'default' && r.packageName.toLowerCase() !== 'version',
-  ).length;
+  const nonDefaultCount = groupedReleases.filter((r) => !isDefaultPackageName(r.packageName)).length;
   const hasPatterns = nonDefaultCount >= 1;
 
   // Group by computed group key
@@ -232,7 +236,7 @@ export function groupReleasesByPackage(releases: Release[], repoName?: string): 
 
   for (const release of groupedReleases) {
     let pkg = release.packageName;
-    if (pkg.toLowerCase() === 'version') {
+    if (isDefaultPackageName(pkg)) {
       pkg = 'default';
       release.packageName = 'default';
     }

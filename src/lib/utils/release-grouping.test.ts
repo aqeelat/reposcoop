@@ -206,6 +206,21 @@ describe('Release Grouping Utilities', () => {
       const patterns = detectPackagePatterns([]);
       expect(patterns).toEqual([]);
     });
+
+    it('does not detect generic words like "Release" or "Version" as package patterns', () => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const releases: any[] = [
+        { tag_name: 'v4.8.1', name: 'Release v4.8.1' },
+        { tag_name: 'v4.8.0', name: 'Release v4.8.0' },
+        { tag_name: 'v3.0.0', name: 'Version 3.0.0' },
+      ];
+
+      const patterns = detectPackagePatterns(releases);
+      expect(patterns).not.toContain('Release');
+      expect(patterns).not.toContain('release');
+      expect(patterns).not.toContain('Version');
+      expect(patterns).not.toContain('default');
+    });
   });
 
   describe('groupReleasesByPackage', () => {
@@ -253,6 +268,26 @@ describe('Release Grouping Utilities', () => {
 
       expect(result.groups).toEqual([]);
       expect(result.totalReleases).toBe(0);
+    });
+
+    it('treats "Release vX.Y.Z" names as default and groups under repo name (e.g. less.js)', () => {
+      // Newer less.js releases use name "Release vX.Y.Z" while the tag stays "vX.Y.Z";
+      // "Release" must not become its own package group.
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const lessReleases: any[] = [
+        { tag_name: 'v4.8.1', name: 'Release v4.8.1', published_at: '2026-07-27T00:00:00Z' },
+        { tag_name: 'v4.8.0', name: 'Release v4.8.0', published_at: '2026-07-22T00:00:00Z' },
+        { tag_name: 'v1.7.5', name: 'v1.7.5', published_at: '2014-11-01T00:00:00Z' },
+      ];
+
+      const result = groupReleasesByPackage(lessReleases, 'less.js');
+
+      // Single group under the repo name, no "Release" group
+      expect(result.groups.map((g) => g.name)).toEqual(['less.js']);
+      expect(result.totalReleases).toBe(3);
+
+      // Newest first
+      expect(result.groups[0].releases.map((r) => r.tag_name)).toEqual(['v4.8.1', 'v4.8.0', 'v1.7.5']);
     });
   });
 
